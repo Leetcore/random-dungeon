@@ -11,15 +11,18 @@ const io = new Server(httpServer, { /* options */ });
 app.use(express.static("public"));
 const gameInst = new game();
 
+// start game events
+gameInst.gameLoop();
+
 io.on("connection", (socket) => {
     // update the map
-    gameInst.updateGame();
+    gameInst.updateGameClient();
 
     // login new or existing player
     socket.on("login", (login) => {
         const player = gameInst.loginPlayer(login);
         socket.emit("player", JSON.stringify(player));
-        gameInst.updateGame();
+        gameInst.updateGameClient();
     });
     
     // move player in game
@@ -28,10 +31,6 @@ io.on("connection", (socket) => {
     });
 
     gameInst.sockets.push(socket);
-
-
-    // start game event
-    gameInst.gameLoop();
 });
 
 httpServer.listen(8080);

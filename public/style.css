@@ -1,6 +1,6 @@
 body {
     background-color: #000;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 #container {
     position: absolute;
@@ -9,12 +9,15 @@ body {
 #map {
     background-color: #000;
 }
+#stats {
+    color: #fff;
+}
 .tile {
     position: absolute;
     width: 96px;
     height: 96px;
 }
-.player {
+.player, .monster {
     position: absolute;
     transition: left 0.3s, top 0.3s;
     width: 32px;

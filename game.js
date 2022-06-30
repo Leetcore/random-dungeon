@@ -16,8 +16,22 @@ const allNewTiles = [
     "UpRightDown"
 ]
 
+const weapons = [
+    {
+        id: 1,
+        name: "Dolch",
+        damage: 3,
+        critChance: 3,
+        filename: "dagger.png"
+    }
+]
+
+function randomNumber(min, max) {
+    return Math.floor(Math.random() * max) + min;
+}
+
 class Game {
-    constructor(socket) {
+    constructor() {
         this.file = {}
         this.file.map = [{
             id: "1",
@@ -140,7 +154,7 @@ class Game {
         const player = this.getPlayer(id);
         if (player.login === login) {
             this.move(player, direction);
-            this.updateGame();
+            this.updateGameClient();
         }
     }
 
@@ -250,7 +264,7 @@ class Game {
                 x--;
                 break;
         }
-        let rnd =  this.randomNumber(0, possibleTiles.length - 1);
+        let rnd =  randomNumber(0, possibleTiles.length - 1);
         newType = possibleTiles[rnd];
 
         if (newType) {
@@ -259,32 +273,113 @@ class Game {
         }
     }
 
-    updateGame() {
+    updateGameClient() {
         this.sockets.forEach(socket => {
             socket.emit("map", JSON.stringify(this.file.map));
             socket.emit("players", JSON.stringify(this.file.players));
+            socket.emit("monsters", JSON.stringify(this.file.monsters));
         })
     }
 
     gameLoop() {
-        // TODO: enemy spawn
+        const rnd  = randomNumber(1, 10);
+        if (rnd == 1) {
+            const newEnemy = new Enemy(
+                "Zentauriman",
+                this.file.monsters.length,
+                "centaur.png",
+                20
+            )
+            this.file.monsters.push(newEnemy);
+        }
+
         // TODO: enemy movement
+
+        // TODO: calculate damage
+        for (let player of this.file.players) {
+            let monster = this.getMonsterXY(player.x, player.y);
+            if (monster) {
+                // fight
+                console.log("player "+ player.id + " vs monster "+ monster.id)
+                const playerDamage = getPlayerDamage(player);
+                console.log("player damage: "+ playerDamage);
+                monster.health -= getPlayerDamage(player);
+                console.log("monster hp: "+ monster.health);
+                if (monster.health > 0) {
+                    const monsterDamage = getDamage(monster);
+                    console.log("monster damage: "+ monsterDamage);
+                    player.health -= getDamage(monster);
+                    console.log("player hp: "+ player.health);
+                } else {
+                    console.log("monster dead!")
+                    this.file.monsters = this.file.monsters.filter(listMonster => listMonster.id !== monster.id);
+                }
+            }
+        }
+
+        this.updateGameClient();
+        setTimeout(() => {
+            this.gameLoop()
+        }, 1000)
     }
 
-    randomNumber(min, max) {
-        return Math.floor(Math.random() * max) + min;
+    getMonsterXY(x, y) {
+        for (let monster of this.file.monsters) {
+            if (monster.x == x && monster.y == y) {
+                return monster;
+            }
+        }
+    }
+}
+
+function getPlayerDamage(player) {
+    const weapon = weapons.find(weapon => weapon.id == player.weapon);
+    if (weapon) {
+        const rnd = randomNumber(1, 10);
+        if (weapon.critChance <= rnd) {
+            return weapon.damage * 2;
+        } else {
+            return weapon.damage;
+        }
+    }
+}
+
+function getDamage(enemy) {
+    const rnd = randomNumber(1, 10);
+    if (enemy.critChance <= rnd) {
+        return enemy.damage * 2;
+    } else {
+        return enemy.damage;
     }
 }
 
 class Player {
     constructor(login, id) {
+        console.log("new player created")
         this.login = login;
         this.id = id;
+        this.health = 100;
+        this.weapon = 1;
         this.x = 0;
         this.y = 0;
         this.type = "player";
         this.url = "/assets/player/halfling.png";
         this.active = true;
+    }
+}
+
+class Enemy {
+    constructor(name, id, filename, health, damage, critChance) {
+        console.log("new enemy created")
+        this.id = id;
+        this.name = name;
+        this.health = health || 20;
+        this.damage = damage || 1;
+        this.critChance = critChance || 1;
+        this.x = 0;
+        this.y = 0;
+        this.type = "enemy";
+        this.url = "/assets/monster/" + filename;
     }
 }
 

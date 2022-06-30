@@ -69,6 +69,10 @@ class Render {
         }
     }
     renderMonsters(monsters) {
+        for (let monster of monsters) {
+            this.renderMonster(monster);
+        }
+        // TODO: remove monster
     }
 
     // render single tile, player or monster
@@ -76,8 +80,8 @@ class Render {
         let tileExists = document.querySelector("#tile_" + tile.id);
         if (!tileExists) {
             document.querySelector("#map")
-            .insertAdjacentHTML("beforeend",
-                `<div
+                .insertAdjacentHTML("beforeend",
+                    `<div
                 class="tile" id="tile_${tile.id}"
                 cordsX="${tile.x}" cordsY="${tile.y}"
                 style="background-image: url(${tile.url});
@@ -91,8 +95,8 @@ class Render {
         if (playerExits) {
             playerExits.style.left = `${(player.x * this.globalScale + 32)}px`
             playerExits.style.top = `${(player.y * this.globalScale + 32)}px`
-            playerExits.setAttribute("cordsX",  player.x)
-            playerExits.setAttribute("cordsY",  player.y)
+            playerExits.setAttribute("cordsX", player.x)
+            playerExits.setAttribute("cordsY", player.y)
         } else {
             document.querySelector("#map")
                 .insertAdjacentHTML("beforeend",
@@ -109,15 +113,42 @@ class Render {
             // thats ME!
             this.renderControls(player, this.getTile(player.x, player.y).type);
             let container = document.querySelector('#container')
-            let playerElement = document.querySelector('#player_'+ client.player.id)
+            let playerElement = document.querySelector('#player_' + client.player.id)
             let left = window.innerWidth / 2 - parseInt(playerElement.style.left);
             let top = window.innerHeight / 2 - parseInt(playerElement.style.top);
-            container.style.top = top +"px";
-            container.style.left = left +"px";
+            container.style.top = top + "px";
+            container.style.left = left + "px";
+
+            this.renderStats(player)
         }
     }
     renderMonster(monster) {
+        // TODO: delete monster
+        let monsterExists = document.querySelector("#monster_" + monster.id)
+        if (monsterExists) {
+            monsterExists.style.left = `${(monster.x * this.globalScale + 32)}px`
+            monsterExists.style.top = `${(monster.y * this.globalScale + 32)}px`
+            monsterExists.setAttribute("cordsX", monster.x)
+            monsterExists.setAttribute("cordsY", monster.y)
+        } else {
+            document.querySelector("#map")
+                .insertAdjacentHTML("beforeend",
+                    `<div class="monster"
+                id="monster_${monster.id}"
+                cordsX="${monster.x}" cordsY="${monster.y}"
+                style="background-image: url(${monster.url});
+                left: ${(monster.x * this.globalScale + 32)}px;
+                top: ${(monster.y * this.globalScale + 32)}px;">
+            </div>`);
+        }
+    }
 
+    // render stats
+    renderStats(player) {
+        document.querySelector("#health").textContent = player.health
+        document.querySelector("#weapon").textContent = player.weapon
+        document.querySelector("#damage").textContent = player.damage
+        document.querySelector("#critChance").textContent = player.critChance
     }
 
     // controls
@@ -152,13 +183,13 @@ class Render {
             case 'up':
                 if (this.checkWay(player, direction)) {
                     document.querySelector("#map")
-                    .insertAdjacentHTML("beforeend",
-                        `<div class="control up"
+                        .insertAdjacentHTML("beforeend",
+                            `<div class="control up"
                         style="left:${player.x * this.globalScale + 32}px;
                         top:${player.y * this.globalScale}px;"
                         onClick="client.move('up')">`);
-                    }
-                    break
+                }
+                break
             case 'right':
                 if (this.checkWay(player, direction)) {
                     document.querySelector("#map")
