@@ -1,0 +1,24 @@
+{
+  "name": "random-dungeon",
+  "version": "1.0.0",
+  "description": "Multiplayer Dungeon",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Leetcore/random-dungeon.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Leetcore/random-dungeon/issues"
+  },
+  "homepage": "https://github.com/Leetcore/random-dungeon#readme",
+  "dependencies": {
+    "express": "^4.18.1",
+    "socket.io": "^4.5.1"
+  }
+}
