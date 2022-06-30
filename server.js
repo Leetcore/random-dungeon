@@ -9,10 +9,9 @@ const io = new Server(httpServer, { /* options */ });
 
 // express public folder
 app.use(express.static("public"));
+const gameInst = new game();
 
 io.on("connection", (socket) => {
-    const gameInst = new game(socket);
-
     // update the map
     gameInst.updateGame();
 
@@ -27,6 +26,9 @@ io.on("connection", (socket) => {
     socket.on("movement", (moveObject) => {
         gameInst.movement(moveObject.id, moveObject.login, moveObject.direction);
     });
+
+    gameInst.sockets.push(socket);
+
 
     // start game event
     gameInst.gameLoop();

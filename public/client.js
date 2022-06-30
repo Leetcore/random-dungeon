@@ -73,7 +73,9 @@ class Render {
 
     // render single tile, player or monster
     renderTile(tile) {
-        document.querySelector("#map")
+        let tileExists = document.querySelector("#tile_" + tile.id);
+        if (!tileExists) {
+            document.querySelector("#map")
             .insertAdjacentHTML("beforeend",
                 `<div
                 class="tile" id="tile_${tile.id}"
@@ -82,24 +84,34 @@ class Render {
                 left: ${(tile.x * this.globalScale)}px;
                 top: ${(tile.y * this.globalScale)}px">
             </div>`);
+        }
     }
     renderPlayer(player) {
-        document.querySelector("#map")
-            .insertAdjacentHTML("beforeend",
-                `<div class="player"
-            id="player_${player.id}"
-            style="background-image: url(${player.url});
-            left: ${(player.x * this.globalScale + 32)}px;
-            top: ${(player.y * this.globalScale + 32)}px;">
-        </div>`);
+        let playerExits = document.querySelector("#player_" + player.id)
+        if (playerExits) {
+            playerExits.style.left = `${(player.x * this.globalScale + 32)}px`
+            playerExits.style.top = `${(player.y * this.globalScale + 32)}px`
+            playerExits.setAttribute("cordsX",  player.x)
+            playerExits.setAttribute("cordsY",  player.y)
+        } else {
+            document.querySelector("#map")
+                .insertAdjacentHTML("beforeend",
+                    `<div class="player"
+                id="player_${player.id}"
+                cordsX="${player.x}" cordsY="${player.y}"
+                style="background-image: url(${player.url});
+                left: ${(player.x * this.globalScale + 32)}px;
+                top: ${(player.y * this.globalScale + 32)}px;">
+            </div>`);
+        }
+
         if (player.id == client.player.id) {
+            // thats ME!
             this.renderControls(player, this.getTile(player.x, player.y).type);
-            // render player in center
-            // TODO
             let container = document.querySelector('#container')
             let playerElement = document.querySelector('#player_'+ client.player.id)
-            let left = parseInt(playerElement.style.left) + window.innerWidth / 2;
-            let top = parseInt(playerElement.style.top) + window.innerHeight / 2;
+            let left = window.innerWidth / 2 - parseInt(playerElement.style.left);
+            let top = window.innerHeight / 2 - parseInt(playerElement.style.top);
             container.style.top = top +"px";
             container.style.left = left +"px";
         }
@@ -110,6 +122,11 @@ class Render {
 
     // controls
     renderControls(player, type) {
+        // remove control divs
+        document.querySelectorAll('.control').forEach(element => {
+            element.remove();
+        });
+
         if (type === 'start') {
             this.showControl(player, 'up');
             this.showControl(player, 'right');

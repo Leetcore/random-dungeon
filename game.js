@@ -45,25 +45,25 @@ class Game {
             type: "UpRightDownLeft",
             url: "/assets/map/UpRightDownLeft.png"
         }, {
-            id: "4",
+            id: "5",
             x: 3,
             y: 1,
             type: "UpRightDown",
             url: "/assets/map/UpRightDown.png"
         }, {
-            id: "5",
+            id: "6",
             x: 0,
             y: 1,
             type: "UpRightDown",
             url: "/assets/map/UpRightDown.png"
         }, {
-            id: "6",
+            id: "7",
             x: 1,
             y: 1,
             type: "UpRightDownLeft",
             url: "/assets/map/UpRightDownLeft.png"
         }, {
-            id: "7",
+            id: "8",
             x: 2,
             y: 1,
             type: "RightLeft",
@@ -74,7 +74,7 @@ class Game {
         this.file.monsters = [];
         //this.saveFile();
         this.readFile();
-        this.socket = socket;
+        this.sockets = [];
     }
 
     readFile() {
@@ -145,6 +145,14 @@ class Game {
     }
 
     move(char, direction) {
+        // check boundries
+        if (direction == "up" && char.y - 1 < 0) {
+            return;
+        }
+        if (direction == "left" && char.x - 1 < 0) {
+            return;
+        }
+
         // check if we need to create a new tile
         if (!this.checkWay(char, direction) && this.getTileInDirection(char, direction) == null) {
             this.generateNewTile(char, direction);
@@ -246,14 +254,16 @@ class Game {
         newType = possibleTiles[rnd];
 
         if (newType) {
-            let newTile = new Tile(x, y, newType);
+            let newTile = new Tile(x, y, newType, this.getMap().length + 1);
             this.file.map.push(newTile);
         }
     }
 
     updateGame() {
-        this.socket.emit("map", JSON.stringify(this.file.map));
-        this.socket.emit("players", JSON.stringify(this.file.players));
+        this.sockets.forEach(socket => {
+            socket.emit("map", JSON.stringify(this.file.map));
+            socket.emit("players", JSON.stringify(this.file.players));
+        })
     }
 
     gameLoop() {
@@ -279,7 +289,8 @@ class Player {
 }
 
 class Tile {
-    constructor(x, y, type) {
+    constructor(x, y, type, id) {
+        this.id = id
         this.x = x;
         this.y = y;
         this.type = type;
