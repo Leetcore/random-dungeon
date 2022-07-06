@@ -34,3 +34,12 @@ body {
 .control:hover {
     background: url("/assets/controls/cursor_yellow.png");
 }
+
+#fight {
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    width: 100%;
+    background-color: #CCC;
+    padding: 10px;
+}

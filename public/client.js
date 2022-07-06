@@ -44,6 +44,10 @@ class Client {
         }
     }
 
+    renderFight(fightReport) {
+        this.render.renderFight(fightReport);
+    }
+
     move(direction) {
         socket.emit("movement", {
             id: this.player.id,
@@ -56,7 +60,10 @@ class Client {
 class Render {
     constructor() {
         this.globalScale = 96;
+        this.fightReportTimer = null
+        this.weapons = [];
     }
+
     // render all tiles, players or monsters
     renderMap(map) {
         for (let tile of map) {
@@ -64,15 +71,32 @@ class Render {
         }
     }
     renderPlayers(players) {
+        // keep track of alive players
+        document.querySelectorAll(".player").forEach(player => {
+            player.classList.remove("alive");
+        });
+        // render or update player
         for (let player of players) {
             this.renderPlayer(player);
         }
+        // remove players that didnt get updated -> dead
+        document.querySelectorAll(".player:not(.alive)").forEach(player => {
+            player.remove()
+        });
     }
     renderMonsters(monsters) {
+        // keep track of alive monsters
+        document.querySelectorAll(".monster").forEach(monster => {
+            monster.classList.remove("alive");
+        });
+        // render or update monsters
         for (let monster of monsters) {
             this.renderMonster(monster);
         }
-        // TODO: remove monster
+        // remove monsters that didnt get updated -> dead
+        document.querySelectorAll(".monster:not(.alive)").forEach(monster => {
+            monster.remove()
+        });
     }
 
     // render single tile, player or monster
@@ -90,9 +114,12 @@ class Render {
             </div>`);
         }
     }
+
     renderPlayer(player) {
         let playerExits = document.querySelector("#player_" + player.id)
         if (playerExits) {
+            // player exist update player position
+            playerExits.classList.add("alive")
             playerExits.style.left = `${(player.x * this.globalScale + 32)}px`
             playerExits.style.top = `${(player.y * this.globalScale + 32)}px`
             playerExits.setAttribute("cordsX", player.x)
@@ -100,7 +127,7 @@ class Render {
         } else {
             document.querySelector("#map")
                 .insertAdjacentHTML("beforeend",
-                    `<div class="player"
+                    `<div class="player alive"
                 id="player_${player.id}"
                 cordsX="${player.x}" cordsY="${player.y}"
                 style="background-image: url(${player.url});
@@ -122,18 +149,22 @@ class Render {
             this.renderStats(player)
         }
     }
+
     renderMonster(monster) {
         // TODO: delete monster
         let monsterExists = document.querySelector("#monster_" + monster.id)
         if (monsterExists) {
+            // monster exist update monster position
+            monsterExists.classList.add("alive")
             monsterExists.style.left = `${(monster.x * this.globalScale + 32)}px`
             monsterExists.style.top = `${(monster.y * this.globalScale + 32)}px`
             monsterExists.setAttribute("cordsX", monster.x)
             monsterExists.setAttribute("cordsY", monster.y)
         } else {
+            // render new monster
             document.querySelector("#map")
                 .insertAdjacentHTML("beforeend",
-                    `<div class="monster"
+                    `<div class="monster alive"
                 id="monster_${monster.id}"
                 cordsX="${monster.x}" cordsY="${monster.y}"
                 style="background-image: url(${monster.url});
@@ -146,9 +177,36 @@ class Render {
     // render stats
     renderStats(player) {
         document.querySelector("#health").textContent = player.health
-        document.querySelector("#weapon").textContent = player.weapon
+        let weapon = this.renderWeapon(player.weapon)
+        document.querySelector("#weapon").innerHTML = '<img src="/assets/weapons/'+ weapon.filename +'"/>'
         document.querySelector("#damage").textContent = player.damage
         document.querySelector("#critChance").textContent = player.critChance
+    }
+
+    renderWeapon(id) {
+        for (let weapon of this.weapons) {
+            if (weapon.id === id) {
+                return weapon;
+            }
+        }
+        return null;
+    }
+
+    // render fight
+    renderFight(fightReportMessage) {
+        const fightReport = JSON.parse(fightReportMessage)
+        document.querySelector("#story").innerHTML = '<div id="fight"><span id="weaponImg"></span><span id="playerDamage"></span></div>'
+        document.querySelector("#playerDamage").textContent = fightReport.playerDamage
+
+        let weapon = this.renderWeapon(fightReport.weapon)
+        document.querySelector("#weaponImg").innerHTML = '<img src="/assets/weapons/'+ weapon.filename +'"/>'
+
+        if (this.fightReportTimer) {
+            clearTimeout(this.fightReportTimer)
+        }
+        this.fightReportTimer = setTimeout(() => {
+            document.querySelector("#fight").remove()
+        }, 30 * 1000);
     }
 
     // controls
@@ -289,6 +347,12 @@ function startSocket() {
     socket.on("monsters", (data) => {
         client.setData(data, "monsters");
         client.renderType("monsters");
+    });
+    socket.on("fight", (fightReport) => {
+        client.renderFight(fightReport);
+    });
+    socket.on("weapons", (weapons) => {
+        client.render.weapons = JSON.parse(weapons);
     });
 }
 

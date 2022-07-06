@@ -21,7 +21,9 @@ io.on("connection", (socket) => {
     // login new or existing player
     socket.on("login", (login) => {
         const player = gameInst.loginPlayer(login);
+        socket.player = player.id;
         socket.emit("player", JSON.stringify(player));
+        socket.emit("weapons", JSON.stringify(gameInst.weapons));
         gameInst.updateGameClient();
     });
     

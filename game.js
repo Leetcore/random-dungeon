@@ -1,3 +1,5 @@
+const { json } = require('express');
+
 fs = require('fs');
 
 const allNewTiles = [
@@ -89,6 +91,7 @@ class Game {
         //this.saveFile();
         this.readFile();
         this.sockets = [];
+        this.weapons = weapons;
     }
 
     readFile() {
@@ -281,6 +284,14 @@ class Game {
         })
     }
 
+    updateFight(playerId, fightReport) {
+        for (let socket of this.sockets) {
+            if (socket.player === playerId) {
+                socket.emit("fight", JSON.stringify(fightReport));
+            }
+        }
+    }
+
     gameLoop() {
         const rnd  = randomNumber(1, 10);
         if (rnd == 1) {
@@ -298,15 +309,22 @@ class Game {
         // TODO: calculate damage
         for (let player of this.file.players) {
             let monster = this.getMonsterXY(player.x, player.y);
+            let fightReport = {}
             if (monster) {
                 // fight
                 console.log("player "+ player.id + " vs monster "+ monster.id)
+                fightReport.weapon = player.weapon
+
                 const playerDamage = getPlayerDamage(player);
+                fightReport.playerDamage = playerDamage
                 console.log("player damage: "+ playerDamage);
+
                 monster.health -= getPlayerDamage(player);
+                fightReport.monsterHealth = monster.health
                 console.log("monster hp: "+ monster.health);
                 if (monster.health > 0) {
                     const monsterDamage = getDamage(monster);
+                    fightReport.monsterDamage = monsterDamage
                     console.log("monster damage: "+ monsterDamage);
                     player.health -= getDamage(monster);
                     console.log("player hp: "+ player.health);
@@ -314,6 +332,9 @@ class Game {
                     console.log("monster dead!")
                     this.file.monsters = this.file.monsters.filter(listMonster => listMonster.id !== monster.id);
                 }
+
+                // send fight report to player
+                this.updateFight(player.id, fightReport)
             }
         }
 
