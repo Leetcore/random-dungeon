@@ -1,6 +1,7 @@
 body {
     background-color: #000;
     overflow: hidden;
+    /* transform: scale(1.1) translateX(40px); */
 }
 #container {
     position: absolute;
@@ -10,7 +11,13 @@ body {
     background-color: #000;
 }
 #stats {
+    display: flex;
+    flex-direction: column;
     color: #fff;
+}
+.flex-item {
+    height: 32px;
+    display: flex;
 }
 .tile {
     position: absolute;
@@ -40,6 +47,37 @@ body {
     left: 0px;
     bottom: 0px;
     width: 100%;
+    height: 64px;
     background-color: #CCC;
-    padding: 10px;
+    z-index: 1;
+}
+#fightContainer {
+    position: relative;
+    margin: 0 auto;
+    height: 32px;
+}
+#fightPlayer {
+    display: flex;
+    position: absolute;
+    left: 45%;
+}
+#fightEnemy {
+    display: flex;
+    position: absolute;
+    left: 55%;
+}
+
+.enemyImg, .playerImg {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    bottom: 0px;
+}
+
+.playerImg {
+    left: -100px;
+}
+
+.enemyImg {
+    right: -100px;
 }

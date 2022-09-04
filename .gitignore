@@ -2,3 +2,4 @@ node_modules
 db.json
 examples/
 **/.DS_Store
+Dungeon Crawl Stone Soup Full/*

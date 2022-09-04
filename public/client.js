@@ -179,8 +179,8 @@ class Render {
         document.querySelector("#health").textContent = player.health
         let weapon = this.renderWeapon(player.weapon)
         document.querySelector("#weapon").innerHTML = '<img src="/assets/weapons/'+ weapon.filename +'"/>'
-        document.querySelector("#damage").textContent = player.damage
-        document.querySelector("#critChance").textContent = player.critChance
+        document.querySelector("#damage").textContent = weapon?.damage
+        document.querySelector("#critChance").textContent = weapon?.critChance
     }
 
     renderWeapon(id) {
@@ -195,11 +195,29 @@ class Render {
     // render fight
     renderFight(fightReportMessage) {
         const fightReport = JSON.parse(fightReportMessage)
-        document.querySelector("#story").innerHTML = '<div id="fight"><span id="weaponImg"></span><span id="playerDamage"></span></div>'
+        document.querySelector("#story").innerHTML = `<div id="fight">
+            <div id="fightContainer">
+                <div id="fightPlayer">
+                    <div id="playerImg"></div>
+                    <div id="weaponImg"></div>
+                    <div id="playerDamage"></div>
+                </div>
+                <div id="fightEnemy">
+                    <div id="enemyDamage"></div>
+                    <div id="enemyImg"></div>
+                    <div id="enemyName"></div>
+                </div>
+            </div>
+        </div>`
         document.querySelector("#playerDamage").textContent = fightReport.playerDamage
 
         let weapon = this.renderWeapon(fightReport.weapon)
         document.querySelector("#weaponImg").innerHTML = '<img src="/assets/weapons/'+ weapon.filename +'"/>'
+
+        document.querySelector("#playerImg").innerHTML = `<img class="playerImg" src="${fightReport.playerImg}"/>`
+        document.querySelector("#enemyImg").innerHTML = `<img class="enemyImg" src="${fightReport.monsterImg}"/>`
+        document.querySelector("#enemyName").innerHTML = fightReport.monsterName
+        document.querySelector("#enemyDamage").innerHTML = fightReport?.monsterDamage || ''
 
         if (this.fightReportTimer) {
             clearTimeout(this.fightReportTimer)
@@ -358,3 +376,15 @@ function startSocket() {
 
 const client = new Client();
 startSocket();
+
+window.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp") {
+        client.move("up")
+    } else if (e.key === "ArrowRight") {
+        client.move("right")
+    } else if (e.key === "ArrowDown") {
+        client.move("down")
+    } else if (e.key === "ArrowLeft") {
+        client.move("left")
+    }
+});

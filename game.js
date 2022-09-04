@@ -23,13 +23,32 @@ const weapons = [
         id: 1,
         name: "Dolch",
         damage: 3,
-        critChance: 3,
+        critChance: 5,
         filename: "dagger.png"
     }
 ]
 
+const monsters = [
+    {
+        name: "Zentauriman",
+        filename: "centaur.png",
+        hp: 20,
+        damage: 1,
+        critChance: 50
+    }, {
+        name: "Kobold",
+        filename: "kobold.png",
+        hp: 50,
+        damage: 5,
+        critChance: 50,
+        stunning: true
+    }
+]
+
 function randomNumber(min, max) {
-    return Math.floor(Math.random() * max) + min;
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
 class Game {
@@ -85,7 +104,7 @@ class Game {
             type: "RightLeft",
             url: "/assets/map/RightLeft.png"
         }
-    ]
+        ]
         this.file.players = [];
         this.file.monsters = [];
         //this.saveFile();
@@ -95,9 +114,9 @@ class Game {
     }
 
     readFile() {
-        fs.readFile('db.json', 'utf8', (err,data) => {
+        fs.readFile('db.json', 'utf8', (err, data) => {
             if (err) {
-              console.log(err);
+                console.log(err);
             } else {
                 this.file = JSON.parse(data);
             }
@@ -170,8 +189,14 @@ class Game {
             return;
         }
 
+        // player is stunned
+        if (this.getMonsterXY(char.x, char.y)?.stunning) {
+            console.log(`Player ${char.id} stunned...`)
+            return;
+        }
+
         // check if we need to create a new tile
-        if (!this.checkWay(char, direction) && this.getTileInDirection(char, direction) == null) {
+        if (this.checkTileExit(char, direction) && this.getTileInDirection(char, direction) == null) {
             this.generateNewTile(char, direction);
         }
 
@@ -199,31 +224,52 @@ class Game {
         }
     }
 
-    checkWay(player, direction) {
+    checkWay(player, direction,) {
         let nextCordsType = null;
+        let currentTile = this.getTile(player.x, player.y);
         if (direction == 'up') {
+            if (currentTile.type.indexOf('Up') == -1) {
+                return false;
+            }
             nextCordsType = this.getTileInDirection(player, direction)?.type;
             if (nextCordsType?.indexOf('Down') >= 0) {
                 return true;
             }
         }
         if (direction == 'right') {
+            if (currentTile.type.indexOf('Right') == -1) {
+                return false;
+            }
             nextCordsType = this.getTileInDirection(player, direction)?.type;
             if (nextCordsType?.indexOf('Left') >= 0) {
                 return true;
             }
         }
         if (direction == 'down') {
+            if (currentTile.type.indexOf('Down') == -1) {
+                return false;
+            }
             nextCordsType = this.getTileInDirection(player, direction)?.type;
             if (nextCordsType?.indexOf('Up') >= 0) {
                 return true;
             }
         }
         if (direction == 'left') {
+            if (currentTile.type.indexOf('Left') == -1) {
+                return false;
+            }
             nextCordsType = this.getTileInDirection(player, direction)?.type;
             if (nextCordsType?.indexOf('Right') >= 0) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    checkTileExit(player, direction) {
+        let currentTile = this.getTile(player.x, player.y);
+        if (currentTile.type.toLowerCase().indexOf(direction) >= 0) {
+            return true;
         }
         return false;
     }
@@ -259,7 +305,7 @@ class Game {
                 x++;
                 break;
             case 'down':
-                possibleTiles = allNewTiles.filter(tile => tile.indexOf("Up") >= 0);  
+                possibleTiles = allNewTiles.filter(tile => tile.indexOf("Up") >= 0);
                 y++;
                 break;
             case 'left':
@@ -267,7 +313,7 @@ class Game {
                 x--;
                 break;
         }
-        let rnd =  randomNumber(0, possibleTiles.length - 1);
+        let rnd = randomNumber(0, possibleTiles.length - 1);
         newType = possibleTiles[rnd];
 
         if (newType) {
@@ -293,41 +339,79 @@ class Game {
     }
 
     gameLoop() {
-        const rnd  = randomNumber(1, 10);
-        if (rnd == 1) {
-            const newEnemy = new Enemy(
-                "Zentauriman",
-                this.file.monsters.length,
-                "centaur.png",
-                20
-            )
-            this.file.monsters.push(newEnemy);
+        let spawnRnd = randomNumber(1, 10);
+        if (spawnRnd == 1) {
+            this.spawnRandomMonster();
         }
 
-        // TODO: enemy movement
+        for (let monster of this.file.monsters) {
+            let moveRnd = randomNumber(1, 100);
+            if (moveRnd <= 30) {
+                let directions = []
+                if (this.checkWay(monster, "up")) {
+                    directions.push("up")
+                }
+                if (this.checkWay(monster, "right")) {
+                    directions.push("right")
+                }
+                if (this.checkWay(monster, "down")) {
+                    directions.push("down")
+                } 
+                if (this.checkWay(monster, "left")) {
+                    directions.push("left")
+                }
+                let directRnd = randomNumber(0, directions.length - 1)
+                let direction = directions[directRnd]
+                if (direction == "up") {
+                    monster.y--;
+                    logEnemyInfos(monster)
+                }
+                if (direction == "right") {
+                    monster.x++;
+                    logEnemyInfos(monster)
+                } 
+                if (direction == "down") {
+                    monster.y++;
+                    logEnemyInfos(monster)
+                }
+                if (direction == "left") {
+                    monster.x--;
+                    logEnemyInfos(monster)
+                }
+            }
+        }
 
-        // TODO: calculate damage
+        // TODO: clculate damage
         for (let player of this.file.players) {
             let monster = this.getMonsterXY(player.x, player.y);
             let fightReport = {}
             if (monster) {
+                // player
+                fightReport.playerImg = player.url
+
                 // fight
-                console.log("player "+ player.id + " vs monster "+ monster.id)
+                console.log("player " + player.id + " vs monster " + monster.id)
                 fightReport.weapon = player.weapon
 
+                // damage
                 const playerDamage = getPlayerDamage(player);
                 fightReport.playerDamage = playerDamage
-                console.log("player damage: "+ playerDamage);
+                console.log("player damage: " + playerDamage);
 
                 monster.health -= getPlayerDamage(player);
+
+                // frontend infos
                 fightReport.monsterHealth = monster.health
-                console.log("monster hp: "+ monster.health);
+                fightReport.monsterName = monster.name
+                fightReport.monsterImg = monster.url
+
+                console.log("monster hp: " + monster.health);
                 if (monster.health > 0) {
                     const monsterDamage = getDamage(monster);
                     fightReport.monsterDamage = monsterDamage
-                    console.log("monster damage: "+ monsterDamage);
+                    console.log("monster damage: " + monsterDamage);
                     player.health -= getDamage(monster);
-                    console.log("player hp: "+ player.health);
+                    console.log("player hp: " + player.health);
                 } else {
                     console.log("monster dead!")
                     this.file.monsters = this.file.monsters.filter(listMonster => listMonster.id !== monster.id);
@@ -351,18 +435,37 @@ class Game {
             }
         }
     }
+
+    spawnRandomMonster() {
+        const rnd = randomNumber(0, monsters.length - 1);
+        const monsterTemplate = monsters[rnd]
+        const newEnemy = new Enemy(
+            this.file.monsters.length,
+            monsterTemplate.name,
+            monsterTemplate.filename,
+            monsterTemplate.hp,
+            monsterTemplate.damage,
+            monsterTemplate.critChance,
+            monsterTemplate.stunning
+        )
+        this.file.monsters.push(newEnemy);
+    }
 }
 
 function getPlayerDamage(player) {
     const weapon = weapons.find(weapon => weapon.id == player.weapon);
     if (weapon) {
-        const rnd = randomNumber(1, 10);
+        const rnd = randomNumber(1, 100);
         if (weapon.critChance <= rnd) {
-            return weapon.damage * 2;
-        } else {
             return weapon.damage;
+        } else {
+            return weapon.damage * 2;
         }
     }
+}
+
+function logEnemyInfos(enemy) {
+    console.log(`Enemy(${enemy.id}): ${enemy.name}, x = ${enemy.x}, y = ${enemy.y}`);
 }
 
 function getDamage(enemy) {
@@ -390,15 +493,16 @@ class Player {
 }
 
 class Enemy {
-    constructor(name, id, filename, health, damage, critChance) {
+    constructor(id, name, filename, health, damage, critChance, stunning, x, y) {
         console.log("new enemy created")
         this.id = id;
         this.name = name;
         this.health = health || 20;
         this.damage = damage || 1;
         this.critChance = critChance || 1;
-        this.x = 0;
-        this.y = 0;
+        this.stunning = stunning || false;
+        this.x = x || 0;
+        this.y = y || 0;
         this.type = "enemy";
         this.url = "/assets/monster/" + filename;
     }
